@@ -11,7 +11,6 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error, m
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.pipeline import Pipeline
 import joblib
-from utils import HousingGrowthPipeline
 
 # To convert to categorical numeric columns, using label encoding:
 def label_encode_total_data(total_data):
@@ -25,10 +24,11 @@ def label_encode_total_data(total_data):
     return total_data, label_encoders
 
 # To revert back to original names after analysis:
-def revert_label_encoding(total_data, label_encoders):
+def revert_label_encoding(encoded_data, label_encoders):
     for col, le in label_encoders.items():
-        total_data[col] = le.inverse_transform(total_data[col])
-    return total_data
+        # Restamos 1 porque originalmente sumaste 1 al encoding
+        encoded_data[col] = le.inverse_transform(encoded_data[col].astype(int) - 1)
+    return encoded_data
 
 #To remove outliers using IQR method
 def remove_outliers_igr(total_data, column):
@@ -71,13 +71,14 @@ def plot_numerical_data(total_data):
         plt.show()
 
 #To do analysis between the variable target and the rest of the variables:
+
 def plot_regplot_heatmap(cleaned_data, target_variable):
     numerical_columns = cleaned_data.select_dtypes(include=["int64", "float64"]).columns
-    numerical_columns = [col for col in numerical_columns if col != target_variable]
+    exclude_cols = [target_variable, "Unnamed: 0"]
+    numerical_columns = [col for col in numerical_columns if col not in exclude_cols]
     num_vars = len(numerical_columns)
     num_cols = 2
     fig, ax = plt.subplots(num_vars, num_cols, figsize=(15, 5 * num_vars))
-    # Ensure ax is always 2D
     if num_vars == 1:
         ax = np.array([ax])
     for i, x_variable in enumerate(numerical_columns):
